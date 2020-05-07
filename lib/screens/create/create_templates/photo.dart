@@ -11,6 +11,7 @@ import 'package:junto_beta_mobile/models/models.dart';
 import 'package:junto_beta_mobile/screens/create/create_actions/create_actions.dart';
 import 'package:junto_beta_mobile/screens/create/create_actions/widgets/create_expression_scaffold.dart';
 import 'package:junto_beta_mobile/utils/junto_overlay.dart';
+import 'package:junto_beta_mobile/utils/time_logger.dart';
 import 'package:junto_beta_mobile/widgets/dialogs/single_action_dialog.dart';
 import 'package:junto_beta_mobile/widgets/image_cropper.dart';
 import 'package:path_provider/path_provider.dart' show getTemporaryDirectory;
@@ -88,7 +89,8 @@ class CreatePhotoState extends State<CreatePhoto> {
       context,
       color: Colors.white54,
     );
-    TimeLogger()
+    final tL = TimeLogger("Compress Time");
+    tL.startRecoder();
     CompressObject compressObject = CompressObject(
       imageFile: file,
       path: dir.path,
@@ -100,7 +102,8 @@ class CreatePhotoState extends State<CreatePhoto> {
       setState(() {
         JuntoLoader.hide();
         imageFile = File(_path);
-        print("Compressed ${imageFile.lengthSync() * 0.000001}");
+        tL.logTime();
+        logger.logDebug("Compressed ${imageFile.lengthSync() * 0.000001}");
       });
     });
   }
