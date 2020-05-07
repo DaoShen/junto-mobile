@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_luban/flutter_luban.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:junto_beta_mobile/app/custom_icons.dart';
 import 'package:junto_beta_mobile/app/expressions.dart';
@@ -11,6 +12,7 @@ import 'package:junto_beta_mobile/screens/create/create_actions/create_actions.d
 import 'package:junto_beta_mobile/screens/create/create_actions/widgets/create_expression_scaffold.dart';
 import 'package:junto_beta_mobile/widgets/dialogs/single_action_dialog.dart';
 import 'package:junto_beta_mobile/widgets/image_cropper.dart';
+import 'package:path_provider/path_provider.dart' show getTemporaryDirectory;
 
 /// Create using photo form
 class CreatePhoto extends StatefulWidget {
@@ -61,7 +63,8 @@ class CreatePhotoState extends State<CreatePhoto> {
         setState(() => imageFile = null);
         return;
       }
-      setState(() => imageFile = cropped);
+      print("Cropped Sized:  ${cropped.lengthSync() * 0.000001}");
+      await _compressImage(cropped);
       _toggleBottomNav(false);
     } catch (e, s) {
       logger.logException(e, s);
@@ -85,8 +88,24 @@ class CreatePhotoState extends State<CreatePhoto> {
     if (cropped == null) {
       return;
     }
-    setState(() => imageFile = cropped);
     _toggleBottomNav(false);
+  }
+
+  Future<void> _compressImage(File file) async {
+    final dir = await getTemporaryDirectory();
+    CompressObject compressObject = CompressObject(
+      imageFile: file,
+      path: dir.path,
+      quality: 75,
+      step: 7,
+      mode: CompressMode.LARGE2SMALL,
+    );
+    Luban.compressImage(compressObject).then((_path) {
+      setState(() {
+        imageFile = File(_path);
+        print("Compressed ${imageFile.lengthSync() * 0.000001}");
+      });
+    });
   }
 
   /// Creates a [PhotoFormExpression] from the given data entered

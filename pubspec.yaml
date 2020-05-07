@@ -31,6 +31,7 @@ dependencies:
   rxdart: 0.24.0
   equatable: ^1.1.1
   json_serializable: ^3.2.5
+  flutter_luban: 0.1.11
   freezed_annotation: ^0.7.1
   dio: ^3.0.9
   animations: ^1.0.0+5
