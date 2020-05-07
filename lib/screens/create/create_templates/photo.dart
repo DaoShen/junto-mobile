@@ -10,6 +10,7 @@ import 'package:junto_beta_mobile/backend/repositories/expression_repo.dart';
 import 'package:junto_beta_mobile/models/models.dart';
 import 'package:junto_beta_mobile/screens/create/create_actions/create_actions.dart';
 import 'package:junto_beta_mobile/screens/create/create_actions/widgets/create_expression_scaffold.dart';
+import 'package:junto_beta_mobile/utils/junto_overlay.dart';
 import 'package:junto_beta_mobile/widgets/dialogs/single_action_dialog.dart';
 import 'package:junto_beta_mobile/widgets/image_cropper.dart';
 import 'package:path_provider/path_provider.dart' show getTemporaryDirectory;
@@ -47,32 +48,21 @@ class CreatePhotoState extends State<CreatePhoto> {
         setState(() => imageFile = null);
         return;
       }
-      final File cropped = await ImageCroppingDialog.show(context, image,
-          aspectRatios: <String>[
-            '1:1',
-            '2:3',
-            '3:2',
-            '3:4',
-            '4:3',
-            '4:5',
-            '5:4',
-            '9:16',
-            '16:9'
-          ]);
-      if (cropped == null) {
-        setState(() => imageFile = null);
-        return;
-      }
+      final cropped = await _cropPhoto(image);
       print("Cropped Sized:  ${cropped.lengthSync() * 0.000001}");
-      await _compressImage(cropped);
+      if (cropped != null) {
+        await _compressImage(cropped);
+      } else {
+        await _compressImage(image);
+      }
       _toggleBottomNav(false);
     } catch (e, s) {
       logger.logException(e, s);
     }
   }
 
-  Future<void> _cropPhoto() async {
-    final File image = imageFile;
+  Future<File> _cropPhoto(final image) async {
+    assert(image != null);
     final File cropped = await ImageCroppingDialog.show(context, image,
         aspectRatios: <String>[
           '1:1',
@@ -86,22 +76,29 @@ class CreatePhotoState extends State<CreatePhoto> {
           '16:9'
         ]);
     if (cropped == null) {
-      return;
+      return null;
     }
     _toggleBottomNav(false);
+    return cropped;
   }
 
   Future<void> _compressImage(File file) async {
     final dir = await getTemporaryDirectory();
+    JuntoLoader.showLoader(
+      context,
+      color: Colors.white54,
+    );
+    TimeLogger()
     CompressObject compressObject = CompressObject(
       imageFile: file,
       path: dir.path,
-      quality: 75,
-      step: 7,
-      mode: CompressMode.LARGE2SMALL,
+      quality: 80,
+      step: 8,
+      autoRatio: true,
     );
     Luban.compressImage(compressObject).then((_path) {
       setState(() {
+        JuntoLoader.hide();
         imageFile = File(_path);
         print("Compressed ${imageFile.lengthSync() * 0.000001}");
       });
@@ -317,7 +314,7 @@ class CreatePhotoState extends State<CreatePhoto> {
                 ),
               ),
               InkWell(
-                onTap: () async => _cropPhoto(),
+                onTap: () async => _cropPhoto(imageFile),
                 child: Container(
                   width: MediaQuery.of(context).size.width * .5,
                   padding: const EdgeInsets.symmetric(vertical: 25),
